@@ -41,7 +41,7 @@ public class GameScreen extends ScreenAdapter {
         this.createShapes();
         this.createplayer();
         this.rayCaster = new RayCaster(playerX, playerY, playerA, wallSize, tileMap);
-        this.rayCaster.createRayRenderers(1);
+        this.rayCaster.createRayRenderers(90);
     }
     private void createplayer() {
         this.player = new ShapeRenderer();
@@ -108,7 +108,7 @@ public class GameScreen extends ScreenAdapter {
             playerDy = (float)Math.sin(playerA)*5;
         }
         this.rayCaster.updatePlayerLoc(playerA, playerX, playerY);
-        this.rayCaster.createRays(1);
+        this.rayCaster.createRays(90);
     }
 
     @Override

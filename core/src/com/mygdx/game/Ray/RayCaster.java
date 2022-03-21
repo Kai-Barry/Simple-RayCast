@@ -5,6 +5,7 @@ import com.mygdx.game.tile.TileSet;
 import com.mygdx.game.tile.TileType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class RayCaster {
@@ -14,7 +15,8 @@ public class RayCaster {
     private TileSet map;
     private int gridSize;
     private List<ShapeRenderer> lines;
-    private List<List<Float>> rays;
+    private List<Float> raysX;
+    private List<Float> raysY;
     private static double deg = 0.0174533;
 
     public RayCaster(double playerA, double playerX, double playerY, int gridSize , TileSet map) {
@@ -23,7 +25,9 @@ public class RayCaster {
         this.playerY = playerY;
         this.map = map;
         this.gridSize = gridSize;
-        this.rays = new ArrayList();
+        float empty[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        this.raysX = new ArrayList(Arrays.asList(empty));
+        this.raysY = new ArrayList(Arrays.asList(empty));
 
     }
 
@@ -50,9 +54,11 @@ public class RayCaster {
         double rayYHor = 0;
         double rayXVer = 0;
         double rayYVer = 0;
-        double offsetX = 0;
-        double offsetY = 0;
-        this.rays = new ArrayList<>();
+        double offsetX = 100;
+        double offsetY = 100;
+        this.raysX.clear();
+        this.raysY.clear();
+
         //ray angles
         double rayA = this.playerA - 30 * deg;
         if (rayA < 0) {
@@ -79,20 +85,24 @@ public class RayCaster {
                 offsetX = -offsetY * tanA;
             }
             while (dof < 20) {
-                mapX = (int)Math.floor(rayXHor / gridSize);
-                mapY = (int)Math.floor(rayYHor / gridSize);
+                mapX = (int) Math.floor(rayXHor / gridSize);
+                mapY = (int) Math.floor(rayYHor / gridSize);
                 if (mapY >= 0 && mapX >= 0 && mapX < map.getWidth() && mapY < map.getWidth()) {
                     if (map.tileAtXY(mapX, mapY).getTileType() == TileType.WALL) {
                         hitH = true;
+//                        System.out.print("mapX: ");
+//                        System.out.print(mapX);
+//                        System.out.print(" RayX: ");
+//                        System.out.print(rayXHor);
+//                        System.out.print(" mapY: ");
+//                        System.out.print(mapY);
+//                        System.out.print(" RayY: ");
+//                        System.out.println(rayYHor);
                         break;
-                    } else {
-                        rayXHor += offsetX;
-                        rayYHor += offsetY;
                     }
-                } else {
-                    rayXHor += offsetX;
-                    rayYHor += offsetY;
                 }
+                rayXHor += offsetX;
+                rayYHor += offsetY;
                 dof++;
             }
             //vertical check
@@ -113,24 +123,20 @@ public class RayCaster {
                 offsetY = -offsetX * tanB;
             }
             while (dof < 20) {
-                mapX = (int)Math.floor(rayXVer / gridSize);
-                mapY = (int)Math.floor(rayYVer / gridSize);
+                mapX = (int) Math.floor(rayXVer / gridSize);
+                mapY = (int) Math.floor(rayYVer / gridSize);
                 if (mapY >= 0 && mapX >= 0 && mapX < map.getWidth() && mapY < map.getWidth()) {
                     if (map.tileAtXY(mapX, mapY).getTileType() == TileType.WALL) {
                         hitV = true;
                         break;
-                    } else {
-                        rayXVer += offsetX;
-                        rayYVer += offsetY;
                     }
-                } else {
-                    rayXVer += offsetX;
-                    rayYVer += offsetY;
                 }
+                rayXVer += offsetX;
+                rayYVer += offsetY;
                 dof++;
             }
             this.setOptimalRay(rayXVer, rayYVer, rayXHor, rayYHor, hitH, hitV);
-            rayA = this.playerA - 30 * deg;
+            rayA++;
             if (rayA < 0) {
                 rayA += 2 * Math.PI;
             } else if (rayA > 2 * Math.PI) {
@@ -144,26 +150,19 @@ public class RayCaster {
 
     private void setOptimalRay(double xVer,double yVer,double xHor,double yHor,boolean hitH, boolean hitV) {
         if (!hitH) {
-            List<Float> best = new ArrayList<>();
-            best.add((float)xVer);
-            best.add((float)yVer);
-            this.rays.add((best));
+            this.raysX.add((float)xVer);
+            this.raysY.add((float)yVer);
         } else if (!hitV) {
-            List<Float> best = new ArrayList<>();
-            best.add((float)xHor);
-            best.add((float)yHor);
-            this.rays.add(best);
+            this.raysX.add((float)xHor);
+            this.raysY.add((float)yHor);
         } else {
-            if (dist(playerX, playerY, xVer, xVer) > dist(playerX, playerY, xHor, yHor)) {
-                List<Float> best = new ArrayList<>();
-                best.add((float) xVer);
-                best.add((float) yVer);
-                this.rays.add(best);
+            if (dist(playerX, playerY, xVer, xVer) < dist(playerX, playerY, xHor, yHor)) {
+                this.raysX.add((float)xVer);
+                this.raysY.add((float)yVer);
             } else {
                 List<Float> best = new ArrayList<>();
-                best.add((float) xHor);
-                best.add((float) yHor);
-                this.rays.add(best);
+                this.raysX.add((float)xHor);
+                this.raysY.add((float)yHor);
             }
         }
     }
@@ -171,10 +170,10 @@ public class RayCaster {
     public void drawRays() {
         int rayNum = 0;
         for (ShapeRenderer line: lines) {
-//            System.out.println(rays.toString());
+//            System.out.println(raysX.toString());
             line.begin(ShapeRenderer.ShapeType.Line);
             line.setColor(1,0,0,1);
-            line.line((float)playerX, (float)playerY, (float) rays.get(rayNum).get(0), rays.get(rayNum).get(0));
+            line.line((float)playerX, (float)playerY, raysX.get(rayNum), raysY.get(rayNum));
             line.end();
             rayNum++;
         }
