@@ -41,7 +41,7 @@ public class GameScreen extends ScreenAdapter {
         this.createShapes();
         this.createplayer();
         this.rayCaster = new RayCaster(playerX, playerY, playerA, wallSize, tileMap);
-        this.rayCaster.createRayRenderers(90);
+        this.rayCaster.createRayRenderers(1);
     }
     private void createplayer() {
         this.player = new ShapeRenderer();
@@ -62,6 +62,8 @@ public class GameScreen extends ScreenAdapter {
     private List<List<ShapeRenderer>> create2DWalls() {
         int width = tileMap.getWidth();
         int height = tileMap.getHeight();
+        System.out.println(width);
+        System.out.println(height);
         List<List<ShapeRenderer>> walls2D = new ArrayList<>();
         for (int y = 0; y < height; y++) {
             walls2D.add(new ArrayList<ShapeRenderer>());
@@ -92,7 +94,7 @@ public class GameScreen extends ScreenAdapter {
 
         }
         if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            playerA += 0.1f;
+            playerA += 0.03f;
             if (playerA > 2 * Math.PI) {
                 playerA -= 2 * (float)Math.PI;
             }
@@ -100,7 +102,7 @@ public class GameScreen extends ScreenAdapter {
             playerDy = (float)Math.sin(playerA)*5;
         }
         if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            playerA -= 0.1f;
+            playerA -= 0.03f;
             if (playerA < 0) {
               playerA += 2 * (float)Math.PI;
             }
@@ -108,7 +110,7 @@ public class GameScreen extends ScreenAdapter {
             playerDy = (float)Math.sin(playerA)*5;
         }
         this.rayCaster.updatePlayerLoc(playerA, playerX, playerY);
-        this.rayCaster.createRays(90);
+        this.rayCaster.createRays(1);
     }
 
     @Override

@@ -4,9 +4,12 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.mygdx.game.tile.TileSet;
 import com.mygdx.game.tile.TileType;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static com.mygdx.game.Ray.Direction.*;
 
 public class RayCaster {
     private double playerA;
@@ -17,17 +20,26 @@ public class RayCaster {
     private List<ShapeRenderer> lines;
     private List<Float> raysX;
     private List<Float> raysY;
+    private List<Float> raysXDebug;
+    private List<Float> raysYDebug;
     private static double deg = 0.0174533;
+    private int debugRayX;
+    private int debugRayY;
+
 
     public RayCaster(double playerA, double playerX, double playerY, int gridSize , TileSet map) {
         this.playerA = playerA;
         this.playerX = playerX;
         this.playerY = playerY;
+        this.debugRayX = 0;
+        this.debugRayY = 0;
         this.map = map;
         this.gridSize = gridSize;
         float empty[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         this.raysX = new ArrayList(Arrays.asList(empty));
         this.raysY = new ArrayList(Arrays.asList(empty));
+        this.raysXDebug = new ArrayList(Arrays.asList(empty));
+        this.raysYDebug = new ArrayList(Arrays.asList(empty));
 
     }
 
@@ -45,104 +57,83 @@ public class RayCaster {
     }
 
     public void createRays(int numRays) {
-        boolean hitH = false;
-        boolean hitV = false;
-        int mapX = 0;
-        int mapY = 0;
-        int dof = 0;
-        double rayXHor = 0;
-        double rayYHor = 0;
-        double rayXVer = 0;
-        double rayYVer = 0;
-        double offsetX = 100;
-        double offsetY = 100;
         this.raysX.clear();
         this.raysY.clear();
 
-        //ray angles
-        double rayA = this.playerA - 30 * deg;
-        if (rayA < 0) {
-            rayA += 2 * Math.PI;
-        } else if (rayA > 2 * Math.PI) {
-            rayA -= 2 * Math.PI;
+        // Ray Stuff
+        double theta = this.playerA;
+        Direction direction;
+        if (theta > 0 && theta < Math.PI / 2) { // up right
+            theta = (Math.PI / 2) -  theta;
+            direction = UR;
+        } else if (theta >= Math.PI / 2 && theta < Math.PI) { // up left
+            theta = theta - (Math.PI / 2);
+            direction = UL;
+        } else if (theta > Math.PI && theta < (3 * Math.PI) / 2) { // down left
+            theta = ((3 * Math.PI) / 2) - theta;
+            direction = DL;
+        } else if (theta >= (3 * Math.PI) / 2 && theta < 2 * Math.PI) { // down right
+            theta = theta - ((3 * Math.PI) / 2);
+            direction = DR;
+        } else {
+            direction = UR;
+            System.out.println("side On");
         }
-        for (int r = 0; r <= numRays; r++) {
-            //horizontal check
-            double tanA = -1 / Math.tan(rayA);
-            if (rayA == 0 || rayA == Math.PI) {
-                rayXHor = this.playerX;
-                rayYHor = this.playerY;
-                dof = map.getWidth() + map.getHeight();
-            } else if (rayA > Math.PI) { //looking down
-                rayYHor = (int) (playerY / gridSize) * gridSize - 0.0001;
-                rayXHor = (playerY - rayYHor) * tanA + playerX;
-                offsetY = -1 * gridSize;
-                offsetX = -offsetY * tanA;
-            } else if (rayA < Math.PI) { //looking up
-                rayYHor = (int) (playerY / gridSize) * gridSize + gridSize;
-                rayXHor = (playerY - rayYHor) * tanA + playerX;
-                offsetY = gridSize;
-                offsetX = -offsetY * tanA;
+        // Horizontal Checks
+        int dof = 2;
+        double ryOffset = this.playerY % this.gridSize;
+        double rxOffset;
+        for (int i = 0; i < dof; i++) {
+            double ry;
+            double rx;
+            int xIndex;
+            int yIndex;
+            if (direction == UR) {
+                ryOffset = this.gridSize - ryOffset + (this.gridSize * i);
+                rxOffset = ryOffset * Math.tan(theta);
+                ry = playerY + ryOffset;
+                rx = playerX + rxOffset;
+                xIndex = (int)Math.floor(rx/ this.gridSize);
+                yIndex = (int)Math.ceil(ry/this.gridSize);
+            } else if (direction == UL) {
+                ryOffset = this.gridSize - ryOffset + (this.gridSize * i);
+                rxOffset = ryOffset * Math.tan(theta);
+                ry = playerY + ryOffset;
+                rx = playerX - rxOffset;
+                xIndex = (int)Math.floor(rx/ this.gridSize);
+                yIndex = (int)Math.ceil(ry/this.gridSize);
+            } else if (direction == DL) {
+                ryOffset = ryOffset + (this.gridSize * (i));
+                rxOffset = ryOffset * Math.tan(theta);
+                ry = playerY - ryOffset;
+                rx = playerX - rxOffset;
+                xIndex = (int)Math.floor(rx/ this.gridSize);
+                yIndex = (int)Math.ceil(ry/this.gridSize);
+            } else { // DR
+                ryOffset = ryOffset + (this.gridSize * (i));
+                rxOffset = ryOffset * Math.tan(theta);
+                ry = playerY - ryOffset;
+                rx = playerX + rxOffset;
+                xIndex = (int)Math.floor(rx/ this.gridSize);
+                yIndex = (int)Math.ceil(ry/this.gridSize);
             }
-            while (dof < 20) {
-                mapX = (int) Math.floor(rayXHor / gridSize);
-                mapY = (int) Math.floor(rayYHor / gridSize);
-                if (mapY >= 0 && mapX >= 0 && mapX < map.getWidth() && mapY < map.getWidth()) {
-                    if (map.tileAtXY(mapX, mapY).getTileType() == TileType.WALL) {
-                        hitH = true;
-//                        System.out.print("mapX: ");
-//                        System.out.print(mapX);
-//                        System.out.print(" RayX: ");
-//                        System.out.print(rayXHor);
-//                        System.out.print(" mapY: ");
-//                        System.out.print(mapY);
-//                        System.out.print(" RayY: ");
-//                        System.out.println(rayYHor);
-                        break;
-                    }
-                }
-                rayXHor += offsetX;
-                rayYHor += offsetY;
-                dof++;
+
+            TileType horizontal = TileType.EMPTY;
+            try {
+                horizontal = map.tileAtXY(xIndex, yIndex).getTileType();
+            } catch (IndexOutOfBoundsException e) {
+
             }
-            //vertical check
-            double tanB = -Math.tan(rayA);
-            if (rayA == 0 || rayA == Math.PI) {
-                rayXVer = this.playerX;
-                rayYVer = this.playerY;
-                dof = map.getWidth() + map.getHeight();
-            } else if (rayA > Math.PI / 2 && rayA < 3 * Math.PI / 2) { //looking down
-                rayXVer = (int) (playerX / gridSize) * gridSize - 0.0001;
-                rayYVer = (playerX - rayXVer) * tanB + playerY;
-                offsetX = -1 * gridSize;
-                offsetY = -offsetX * tanB;
-            } else if (rayA < Math.PI / 2 || rayA > 3 * Math.PI / 2) { //looking up
-                rayXVer = (int) (playerX / gridSize) * gridSize + gridSize;
-                rayYVer = (playerX - rayXVer) * tanB + playerY;
-                offsetX = gridSize;
-                offsetY = -offsetX * tanB;
+            if (horizontal == TileType.WALL) {
+                System.out.println((rxOffset /this.gridSize)  + " , "+ (ryOffset /this.gridSize) +" | " + xIndex + " , " + yIndex);
+                this.raysX.add((float)rx);
+                this.raysY.add((float)ry);
+                break;
             }
-            while (dof < 20) {
-                mapX = (int) Math.floor(rayXVer / gridSize);
-                mapY = (int) Math.floor(rayYVer / gridSize);
-                if (mapY >= 0 && mapX >= 0 && mapX < map.getWidth() && mapY < map.getWidth()) {
-                    if (map.tileAtXY(mapX, mapY).getTileType() == TileType.WALL) {
-                        hitV = true;
-                        break;
-                    }
-                }
-                rayXVer += offsetX;
-                rayYVer += offsetY;
-                dof++;
-            }
-            this.setOptimalRay(rayXVer, rayYVer, rayXHor, rayYHor, hitH, hitV);
-            rayA++;
-            if (rayA < 0) {
-                rayA += 2 * Math.PI;
-            } else if (rayA > 2 * Math.PI) {
-                rayA -= 2 * Math.PI;
-            }
+            this.debugRayX = xIndex;
+            this.debugRayY = yIndex;
         }
+
     }
     private double dist(double ax, double ay, double bx, double by ) {
         return Math.sqrt((bx - ax) * (bx - ax) + (by - ay) * (by - ay));
@@ -169,13 +160,84 @@ public class RayCaster {
 
     public void drawRays() {
         int rayNum = 0;
-        for (ShapeRenderer line: lines) {
-//            System.out.println(raysX.toString());
-            line.begin(ShapeRenderer.ShapeType.Line);
-            line.setColor(1,0,0,1);
-            line.line((float)playerX, (float)playerY, raysX.get(rayNum), raysY.get(rayNum));
-            line.end();
-            rayNum++;
+        if (raysX.size() > 0) {
+            for (ShapeRenderer line : lines) {
+                line.begin(ShapeRenderer.ShapeType.Line);
+                line.setColor(1, 0, 0, 1);
+                line.line((float) playerX, (float) playerY, raysX.get(rayNum), raysY.get(rayNum));
+                line.end();
+                rayNum++;
+                break;
+            }
+        } else {
+            System.out.println("(" + this.debugRayX + " , " + this.debugRayY + ")");
         }
     }
 }
+
+
+//        if (rayA > 0 && rayA < Math.PI / 2) { // up right
+//            System.out.println("UR");
+//            rayYHor = this.gridSize - (this.playerY % this.gridSize);
+//            theta = (Math.PI / 2) -  rayA;
+//            rayXHor = rayYHor * Math.tan(theta) * -1;
+//            xIntercept = Math.floor((rayXHor - playerX % this.gridSize) / gridSize);
+//        } else if (rayA >= Math.PI / 2 && rayA < Math.PI) { // up left
+//            System.out.println("UL");
+//            rayYHor = this.gridSize - (this.playerY % this.gridSize);
+//            theta = rayA - (Math.PI / 2);
+//            rayXHor = rayYHor * Math.tan(theta);
+//            xIntercept = Math.floor((rayXHor - playerX % this.gridSize) / gridSize);
+//        } else if (rayA > Math.PI && rayA < (3 * Math.PI) / 2) { // down left
+//            System.out.println("DL");
+//            rayYHor = (this.playerY % this.gridSize);
+//            theta = ((3 * Math.PI) / 2) - rayA;
+//            rayXHor = rayYHor * Math.tan(theta);
+//            xIntercept = Math.floor((rayXHor - playerX % this.gridSize) / gridSize);
+//        } else if (rayA >= (3 * Math.PI) / 2 && rayA < 2 * Math.PI) { // down right
+//            System.out.println("DR");
+//            rayYHor = (this.playerY % this.gridSize);
+//            theta = rayA - ((3 * Math.PI) / 2);
+//            rayXHor = rayYHor * Math.tan(theta) * -1;
+//            xIntercept = Math.floor((rayXHor - playerX % this.gridSize) / gridSize);
+//        } else {
+//            System.out.println("side ons");
+//        }
+//
+//        System.out.println(xIntercept);
+//        int dof = 99;
+//        for (int i = 0; i < dof; i++) {
+//            if (rayXHor > 0) {
+//                double rayGridY = rayYHor + this.gridSize;
+//
+//            } else {
+//
+//            }
+////            int rayGridX = xIntercept;
+////            int rayGridY = (int)(this.playerY / gridSize);
+////            TileType horizontal = map.tileAtXY(rayGridX, rayGridY).getTileType();
+////            TileType vertical = map.tileAtXY(rayGridX, rayGridY).getTileType();
+////            if (horizontal == TileType.WALL);
+////                break;
+//        }
+
+//        System.out.println("Cos: "  + String.valueOf(rayCos) + " Sin: "  + String.valueOf(raySin));
+
+// Wall finder
+
+//        if (rayA < 0) {
+//            rayA += 2 * Math.PI;
+//        } else if (rayA > 2 * Math.PI) {
+//            rayA -= 2 * Math.PI;
+//        }
+//        for (int r = 0; r < numRays; r++) {
+//            rayX = this.playerX;
+//            rayY = this.playerY;
+//
+//            rayA++;
+//            if (rayA < 0) {
+//                rayA += 2 * Math.PI;
+//            } else if (rayA > 2 * Math.PI) {
+//                rayA -= 2 * Math.PI;
+//            }
+//        }
