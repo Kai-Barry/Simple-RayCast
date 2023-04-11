@@ -33,6 +33,12 @@ public class TileSet {
             mapCreation.get(4).get(5).changeTileType(WALL);
             mapCreation.get(4).get(6).changeTileType(WALL);
             mapCreation.get(3).get(4).changeTileType(WALL);
+            mapCreation.get(1).get(1).changeTileType(WALL);
+            mapCreation.get(1).get(2).changeTileType(WALL);
+            mapCreation.get(2).get(2).changeTileType(WALL);
+            mapCreation.get(6).get(7).changeTileType(WALL);
+            mapCreation.get(5).get(8).changeTileType(WALL);
+
             return mapCreation;
         }
         return null;

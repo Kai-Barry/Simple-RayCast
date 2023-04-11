@@ -14,10 +14,11 @@ public class RayCastGame extends Game {
 	Texture img;
 	private OrthographicCamera camera;
 	private ShapeRenderer shapeRenderer;
+	private UserSettings settings;
 
 	@Override
 	public void create () {
-		UserSettings settings = new UserSettings();
+		this.settings = new UserSettings();
 		settings.applySettings();
 		this.camera = new OrthographicCamera();
 		this.camera.setToOrtho(false, settings.getWidth(), settings.getHeight());
@@ -31,10 +32,10 @@ public class RayCastGame extends Game {
 		}
 		switch (screenType) {
 			case GAME_SCREEN:
-				setScreen(new GameScreen(this, this.camera));
+				setScreen(new GameScreen(this, this.camera, settings));
 				break;
 			default:
-				setScreen(new GameScreen(this, this.camera));
+				setScreen(new GameScreen(this, this.camera, settings));
 				break;
 		}
 	}

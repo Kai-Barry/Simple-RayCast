@@ -14,6 +14,7 @@ import com.mygdx.game.RayCastGame;
 import com.mygdx.game.tile.Tile;
 import com.mygdx.game.tile.TileSet;
 import com.mygdx.game.tile.TileType;
+import com.mygdx.game.utility.UserSettings;
 
 
 import java.util.ArrayList;
@@ -33,15 +34,21 @@ public class GameScreen extends ScreenAdapter {
     private Float playerX, playerY, playerDx, playerDy, playerA;
     private static float PI = 3.1415926535f;
     private RayCaster rayCaster;
+    private int numRays;
+    private UserSettings userSettings;
+    private int tick;
 
-    public GameScreen(RayCastGame game, OrthographicCamera camera) {
+    public GameScreen(RayCastGame game, OrthographicCamera camera, UserSettings userSettings) {
         this.game = game;
         this.camera = camera;
         this.tileMap = new TileSet(10,10);
         this.createShapes();
         this.createplayer();
-        this.rayCaster = new RayCaster(playerX, playerY, playerA, wallSize, tileMap);
-        this.rayCaster.createRayRenderers(90);
+        this.rayCaster = new RayCaster(playerX, playerY, playerA, wallSize, tileMap, userSettings);
+        this.numRays = 60;
+        this.rayCaster.createRayRenderers(this.numRays);
+        this.rayCaster.createWalls(this.numRays);
+        this.tick = 0;
     }
     private void createplayer() {
         this.player = new ShapeRenderer();
@@ -108,18 +115,24 @@ public class GameScreen extends ScreenAdapter {
             playerDy = (float)Math.sin(playerA)*5;
         }
         this.rayCaster.updatePlayerLoc(playerA, playerX, playerY);
-        this.rayCaster.createRays(90);
+        this.rayCaster.createRays(this.numRays);
     }
 
     @Override
     public void render(float delta) {
         this.update();
-//        System.out.println(String.format("x: %f  y: %f A: %f", playerX, playerY, playerA));
-        Gdx.gl.glClearColor(0.3f, 0.3f, 0.3f, 0);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        this.rayCaster.drawRays();
-        this.render2DWalls();
-        this.renderPlayer();
+        if (tick > 10) {
+            Gdx.gl.glClearColor(0.3f, 0.3f, 0.3f, 0);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            if (true) {
+                this.render2DWalls();
+                this.rayCaster.drawRays();
+                this.renderPlayer();
+            } else {
+                this.rayCaster.draw3D();
+            }
+        }
+        tick++;
     }
 
     private void render2DWalls() {
